@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <!-- jQuery -->
+  <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+  <style>
+  body {
+    margin: 0;
+    padding: 0;
+    font-size: 16px;
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+    background: #fff;
+  }
+
+  .search {
+    margin: 0 auto; 
+    text-align: center;
+  }
+
+  #text {
+    text-align: center;
+  }
+
+  #myMap {
+    margin: 10px;
+  }
+
+  button {
+    cursor: pointer;
+  }
+
+  ul {
+    padding: 0;
+  }
+
+  li {
+    list-style-type: none;
+  }
+
+  img {
+    margin: 0 auto;
+  }
+
+  #map {
+    margin-left: 40px;
+  }
+
+  .images {
+    width: 33%;
+    margin: 0 auto;
+  }
+
+  .shot {
+    width: 600px;
+  }
+
+  .hidden {
+    display: none;
+  }
+
+  img:last-child {
+    padding: 0;
+  }
+
+  #copyright {
+    text-align: center;
+  }
+  </style>
+  <title>フリーワード検索できるレストラン検索サイト</title>
+</head>
+<body>
+  <div class="search">
+    <h2>フリーワード検索できるレストラン検索サイト</h2>
+    <input type="text" id="query">
+    <button id="search">検索する</button>
+  </div>
+  <p id="text"></p>
+  <script src="https://www.bing.com/api/maps/mapcontrol?callback=GetMap&key=Aq85QqlLbC0dRom2iGUEyJ96Rj1jv61bGd0gMAn5q0Wx7WJMHo3Lmt-xn2YNQN4o" async defer></script>
+  <div id="myMap" style="width:100%;height:400px;"></div>
+  <script src="js/BmapQuery.js"></script>
+  <div id="result"></div>
+  <p id="copyright" class="hidden">Supported by ぐるなびWebService : https://api.gnavi.co.jp/api/scope/</p>
+<script>
+  "use strict";
+  $(function() {
+    //アクセスキー3/20まで
+    let url = "https://api.gnavi.co.jp/RestSearchAPI/v3/?keyid=6c19f48b2a6c16754b89feb20d5e6a79&freeword=";
+
+    let Latitude;
+    let Longitude;
+
+    $("#query").on("keydown", function(e) {
+      if(e.keyCode == 13) {
+        $("#search").trigger("click");
+      }
+    });
+
+    $("#search").on("click", function(){
+      let query = $("#query").val();
+      $("input").val('');
+
+      $("#text").html(query + 'の検索結果');
+      $("input").blur(); //フォーカス解除
+      
+
+      $.getJSON(url + query, function(data) {
+        let shopInfo = "";
+        let text = "";
+        console.log(data);
+
+        // Map
+        let map = new Bmap("#myMap");
+        map.startMap(35.681236, 139.767125, "load", 11);
+          
+        for(let i = 0; i < data.rest.length; i++){
+          let Rest = data.rest[i];
+          let counter = i + 1;
+          let Latitude = Rest.latitude;
+          let Longitude = Rest.longitude;
+
+          shopInfo += '<div class="images">';
+          shopInfo += '<div class="shot">';
+          shopInfo += '<ul>';
+          shopInfo += '<li class="info">' + counter + ':' + Rest.name + '</li>'; //店名
+          
+          // 店名と最寄り駅を表示
+          let pin = map.pinText(Latitude, Longitude, Rest.name, Rest.access.station);
+          // pinをクリックしたら店詳細のURLに遷移
+          map.onPin(pin, "click", function() {
+            window.location.href = Rest.url;
+          });
+
+          shopInfo += '<li>' + Rest.address + '</li>'; //住所
+          shopInfo += '<li>' + 'Tel:'+ Rest.tel + '</li>'; //電話
+          shopInfo += '<li>' + Rest.access.line + Rest.access.station + Rest.access.station_exit + 'から'
+            +  Rest.access.walk + '分' + '</li>'; //アクセス
+          shopInfo += '<li><a href='+ Rest.url + '>詳細はこちら</a>'+'(ぐるなびの店舗ページへ飛ぶ)</li>'; 
+          shopInfo += '</ul>';
+          shopInfo += '</div>';
+
+          // thumbnail
+          if(Rest.image_url.shop_image1 == "") {
+            shopInfo += '<img src="final_img/dummy.png" width="240" height="240">';
+          } else if (Rest.image_url == ""){
+            shopInfo += '<img src="final_img/dummy.png" width="240" height="240">';
+          } else {
+            shopInfo += "<img src=" + Rest.image_url.shop_image1 + '>';
+          }
+          shopInfo += '</div>';
+          $("#result").html(shopInfo);
+          $("#copyright").removeClass('hidden');
+        }
+      });
+    });
+  });
+
+</script>
+  <!-- 参考サイト
+    Map https://mapapi.org/indexb.php //Map
+    https://uxmilk.jp/41457 // ページ遷移
+  -->
+</body>
+</html>
